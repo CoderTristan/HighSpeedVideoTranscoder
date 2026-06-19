@@ -15,7 +15,6 @@ export const apiRequest = async <T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  // Safeguard against stringified null/undefined values
   if (token && token !== 'undefined' && token !== 'null') {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -33,26 +32,32 @@ export const apiRequest = async <T>(
     throw new Error(errorData.message || 'An unexpected error occurred');
   }
 
-  // --- FIX HERE: Check Content-Type header ---
   const contentType = response.headers.get("content-type");
 
   if (contentType && contentType.includes("application/json")) {
-    return await response.json() as T; // Parse JSON for auth routes
+    return await response.json() as T;
   } else {
-    const text = await response.text(); // Fallback to plain text for transcoding
+    const text = await response.text();
     return text as unknown as T;
   }
 };
 
-// ------------------------------
-// SPECIFIC API CALLS
-// ------------------------------
+export const fetchMyVideos = async (): Promise<string[]> => {
+  return apiRequest<string[]>(
+      "/video/my-videos",
+      "GET"
+  );
+};
 
-export const transcodeVideo = async (file: File): Promise<string> => {
+export const processVideo = async (
+    file: File,
+    action: 'compress' | 'proxy' | 'audio' | 'silence_trim'
+): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
+
   return apiRequest<string>(
-      "/video/transcode",
+      `/video/process?action=${action}`,
       "POST",
       formData,
       true
